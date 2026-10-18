@@ -671,7 +671,7 @@ const GUIDE={
   l3listen:'依序按 1、2、3、4，每按一個就聽一句故事。四句都聽完，按拼圖開始排順序。',
   l3orderA:'把下面的圖卡拖到 1～4 的格子，排好按 ✓ 檢查。忘記故事可以按下方的數字再聽一句。',
   l3orderB:'看圖想一想事情的先後，把圖卡拖到 1～4 的格子，排好按 ✓ 檢查。放錯的卡會退回來。',
-  l3teach:'排對了！依序點每一張圖，聽這一張的故事句子。四張都聽過，按麥克風開始說故事。',
+  l3teach:'排對了！依序點每一張圖或下面的喇叭，聽這一張的故事句子。四張都聽過後，按下方的麥克風開始說故事。',
   l3tell:'看圖說出這一張的句子：按老師頭像聽示範 → 按麥克風錄音 → 聽自己說的。用箭頭換下一張；四張都錄完可播放完整故事。',
 };
 function setGuide(k){document.querySelectorAll('.screen .gtx').forEach(e=>e.textContent=GUIDE[k]||'');}
@@ -906,7 +906,7 @@ function drawSlots(){
   const caps=$('#caps3');caps.innerHTML='';
   for(let s=0;s<4;s++){const c=document.createElement('div');c.className='cap';
     if(locked3[s]){c.innerHTML=`<button class="capbtn" aria-label="再聽一次第${s+1}句">${ICON.speaker}</button><span>${L3[s].t}</span>`;
-      c.querySelector('button').onclick=async()=>{stopAudio();document.querySelectorAll('.sslot').forEach((x,j)=>x.classList.toggle('lit',j===s));await say(L3[s].k,L3[s].t);document.querySelector(`.sslot[data-s="${s}"]`)?.classList.remove('lit');};}
+      c.querySelector('button').onclick=async()=>{stopAudio();const d=document.querySelector(`.sslot[data-s="${s}"]`);document.querySelectorAll('.sslot').forEach((x,j)=>x.classList.toggle('lit',j===s));const ok=await say(L3[s].k,L3[s].t);d?.classList.remove('lit');if(ok&&teach3)markHeard(s);};}
     caps.appendChild(c);}
   const full=slot3.every(x=>x!==null)&&!locked3.every(Boolean);
   $('#check3').hidden=!full;if(full)$('#check3').classList.add('pulse');
@@ -955,7 +955,7 @@ $('#check3').onclick=async()=>{
   if(!wrong){drawSlots();$('#check3').hidden=true;burst('party');
     $('#ear3').hidden=true;
     if(!await say('L3_teacher'))return;
-    teach3=true;setGuide('l3teach');document.querySelectorAll('.sslot').forEach(d=>d.classList.add('playable'));
+    teach3=true;setGuide('l3teach');document.querySelectorAll('.sslot').forEach(d=>d.classList.add('playable'));$('#toTell').hidden=false;
     return;}
   // 放錯的卡片搖一搖後回到托盤
   slot3.forEach((i,s)=>{if(i!==s)shakeEl(document.querySelector(`.sslot[data-s="${s}"]`));});
@@ -972,9 +972,10 @@ $('#slots3').addEventListener('click',async e=>{
   const i=+d.dataset.s;stopAudio();
   document.querySelectorAll('.sslot').forEach(x=>x.classList.toggle('lit',x===d));
   const ok=await say(L3[i].k,L3[i].t);d.classList.remove('lit');
-  if(!ok)return;heardT.add(i);d.classList.add('heard');
-  if(heardT.size===4&&$('#toTell').hidden){$('#toTell').hidden=false;$('#toTell').classList.add('pulse');}
+  if(ok)markHeard(i);
 });
+function markHeard(i){heardT.add(i);document.querySelector(`.sslot[data-s="${i}"]`)?.classList.add('heard');
+  if(heardT.size===4){$('#toTell').hidden=false;$('#toTell').classList.add('pulse');}}
 $('#toTell').onclick=()=>{stopAudio();part3('tell3');page3=0;showPage3(true);};
 function drawPdots(){const p=$('#pdots3');p.innerHTML='';L3.forEach((_,i)=>{const d=document.createElement('i');d.textContent=i+1;if(mine3[i])d.className='rec';if(i===page3)d.classList.add('cur');d.onclick=()=>{page3=i;showPage3();};p.appendChild(d);});}
 async function showPage3(first){
